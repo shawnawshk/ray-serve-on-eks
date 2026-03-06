@@ -1,0 +1,71 @@
+services:
+  ray-head:
+    image: rayproject/ray:2.44.0-py312
+    container_name: ray-head
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        ray start --head --port=6379 --dashboard-host=0.0.0.0 --num-cpus=2 --block
+    ports:
+      - "8265:8265"
+      - "8000:8000"
+    environment:
+      - PYTHONPATH=/workspace
+      - RAY_DEDUP_LOGS=0
+    volumes:
+      - ./serve:/workspace
+    healthcheck:
+      test: ["CMD", "ray", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  ray-worker:
+    image: rayproject/ray:2.44.0-py312
+    container_name: ray-worker
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        until ray health-check --address=ray-head:6379 2>/dev/null; do
+          echo "Waiting for ray head..."
+          sleep 2
+        done
+        ray start --address=ray-head:6379 --num-cpus=2 --block
+    environment:
+      - PYTHONPATH=/workspace
+      - RAY_DEDUP_LOGS=0
+    volumes:
+      - ./serve:/workspace
+    depends_on:
+      ray-head:
+        condition: service_healthy
+
+  deploy:
+    image: rayproject/ray:2.44.0-py312
+    container_name: ray-deploy
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        until ray health-check --address=ray-head:6379 2>/dev/null; do
+          echo "Waiting for ray cluster..."
+          sleep 2
+        done
+        sleep 3
+        echo "=== Ray cluster status ==="
+        ray status --address=ray-head:6379
+
+        echo ""
+        echo "=== Deploying dummy serve app ==="
+        RAY_DASHBOARD_ADDRESS=http://ray-head:8265 serve deploy /workspace/dummy_serve_config.yaml
+
+        echo ""
+        echo "=== Waiting for serve to be ready ==="
+        python3 /workspace/wait_and_test.py
+    environment:
+      - RAY_ADDRESS=ray-head:6379
+      - PYTHONPATH=/workspace
+    volumes:
+      - ./serve:/workspace
+    depends_on:
+      ray-head:
+        condition: service_healthy

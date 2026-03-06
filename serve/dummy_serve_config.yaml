@@ -1,0 +1,4 @@
+applications:
+- name: dummy-app
+  import_path: dummy_app:deployment
+  route_prefix: /

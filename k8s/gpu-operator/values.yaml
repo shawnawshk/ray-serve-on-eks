@@ -1,0 +1,25 @@
+# Ref: https://github.com/hustshawn/tf-eks-demo/blob/main/kubernetes/gpu-operator/values-override.yaml
+# Full values: https://github.com/NVIDIA/gpu-operator/blob/main/deployments/gpu-operator/values.yaml
+driver:
+  enabled: false  # EKS GPU-optimized AMI (amazon-eks-node-al2023-x86_64-nvidia) already has drivers
+
+dcgm:
+  enabled: false
+
+dcgmExporter:
+  enabled: false
+
+gfd:
+  enabled: false
+
+migManager:
+  enabled: false
+
+gds:
+  enabled: false
+
+vgpuManager:
+  enabled: false
+
+vgpuDeviceManager:
+  enabled: false
