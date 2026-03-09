@@ -26,17 +26,6 @@ Scalable LLM inference on Amazon EKS using [Ray Serve](https://docs.ray.io/en/la
          ▲ load test (Locust)         ▲ observe (Ray Dashboard)
 ```
 
-## Key Design Decisions
-
-| Decision | Choice | Why |
-|---|---|---|
-| Serving framework | Ray Serve `RayService` CRD | Full lifecycle management + zero-downtime canary upgrades |
-| Inference engine | vLLM native OpenAI serving layer | Streaming, tool calling, `/v1/models`, `/v1/completions` out of the box |
-| Code packaging | **ConfigMap** (not baked into image) | Runtime decoupled from app logic — update code without rebuilding the image |
-| Autoscaling config | In `serveConfigV2` (not in Python) | Single source of truth, declarative, `kubectl apply` to change |
-| GPU per replica | 1 | Clean 1:1 mapping with Karpenter nodes |
-| Image | `rayproject/ray:2.54.0-py312-gpu` + `pip install vllm` | Minimal custom image, latest vLLM compatibility |
-
 ## Project Structure
 
 ```
