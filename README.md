@@ -40,18 +40,17 @@ Scalable LLM inference on Amazon EKS using [Ray Serve](https://docs.ray.io/en/la
 ## Project Structure
 
 ```
-ray-serve-demo/
+ray-serve-on-eks/
 ├── Dockerfile                          # Runtime image (Ray + vLLM, no app code)
 ├── docker-compose.yaml                 # Local dev cluster (CPU, no GPU)
 ├── serve/
-│   ├── vllm_serve.py                   # vLLM OpenAI serving deployment (source of truth)
-│   ├── app.py                          # Legacy hand-rolled serve app (reference)
-│   ├── dummy_app.py                    # Minimal app for local testing
-│   └── wait_and_test.py                # Health check helper
+│   ├── vllm_serve.py                   # vLLM OpenAI serving app (source of truth → ConfigMap)
+│   ├── dummy_app.py                    # Minimal echo app for local testing
+│   ├── dummy_serve_config.yaml         # Serve config for dummy app
+│   └── wait_and_test.py                # Health check helper for docker-compose
 ├── k8s/
 │   ├── ray/
 │   │   ├── rayservice.yaml             # RayService manifest
-│   │   ├── vllm-serve-configmap.yaml   # ConfigMap (generated from serve/vllm_serve.py)
 │   │   └── open-webui.yaml             # Open WebUI frontend (Deployment + ClusterIP Service)
 │   ├── karpenter/
 │   │   └── gpu-nodepool.yaml           # GPU NodePool + EC2NodeClass
@@ -64,6 +63,8 @@ ray-serve-demo/
 └── docs/plans/
     └── *.md                            # Design docs
 ```
+
+`serve/vllm_serve.py` is the **single source of truth** for the serve application. At deploy time it is loaded into a ConfigMap and mounted into the Ray pods — no code is baked into the container image.
 
 ## Prerequisites
 
@@ -98,8 +99,10 @@ kubectl create secret generic hf-token --from-literal=HF_TOKEN=hf_xxxxx
 ### 3. Deploy
 
 ```bash
-# Apply the serve script as ConfigMap
-kubectl apply -f k8s/ray/vllm-serve-configmap.yaml
+# Generate ConfigMap from serve script and apply
+kubectl create configmap vllm-serve-script \
+  --from-file=vllm_serve.py=serve/vllm_serve.py \
+  --dry-run=client -o yaml | kubectl apply -f -
 
 # Deploy the RayService
 kubectl apply -f k8s/ray/rayservice.yaml
@@ -150,7 +153,7 @@ Open WebUI auto-discovers models from the vLLM backend (`/v1/models`). Auth is d
 The application code lives in a ConfigMap, **not in the container image**. To update:
 
 ```bash
-# Edit serve/vllm_serve.py locally, then regenerate the ConfigMap:
+# Edit serve/vllm_serve.py, then regenerate the ConfigMap:
 kubectl create configmap vllm-serve-script \
   --from-file=vllm_serve.py=serve/vllm_serve.py \
   --dry-run=client -o yaml | kubectl apply -f -
