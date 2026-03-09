@@ -1,0 +1,44 @@
+include .env
+export
+
+IMAGE_URI := $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(IMAGE_REPO)
+
+.PHONY: help build push login configmap render deploy teardown all
+
+help: ## Show this help
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
+
+login: ## Login to ECR
+	aws ecr get-login-password --region $(AWS_REGION) | \
+		docker login --username AWS --password-stdin $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com
+
+build: ## Build the runtime image
+	docker buildx build --platform linux/amd64 -t $(IMAGE_URI):$(IMAGE_TAG) --load .
+
+push: login ## Push the runtime image to ECR
+	docker push $(IMAGE_URI):$(IMAGE_TAG)
+
+build-push: login ## Build and push in one step
+	docker buildx build --platform linux/amd64 -t $(IMAGE_URI):$(IMAGE_TAG) --push .
+
+configmap: ## Generate ConfigMap from serve/vllm_serve.py and apply
+	kubectl create configmap vllm-serve-script \
+		--from-file=vllm_serve.py=serve/vllm_serve.py \
+		--dry-run=client -o yaml | kubectl apply -f -
+
+render: ## Render rayservice.yaml from template with .env values
+	@IMAGE_URI=$(IMAGE_URI) IMAGE_TAG=$(IMAGE_TAG) envsubst < k8s/ray/rayservice.yaml.tpl > k8s/ray/rayservice.yaml
+	@echo "Rendered k8s/ray/rayservice.yaml with image $(IMAGE_URI):$(IMAGE_TAG)"
+
+deploy: configmap render ## Deploy ConfigMap + RayService
+	kubectl apply -f k8s/ray/rayservice.yaml
+
+deploy-webui: ## Deploy Open WebUI
+	kubectl apply -f k8s/ray/open-webui.yaml
+
+teardown: ## Delete RayService + ConfigMap + Open WebUI
+	-kubectl delete rayservice vllm-serve -n default
+	-kubectl delete configmap vllm-serve-script -n default
+	-kubectl delete -f k8s/ray/open-webui.yaml
+
+all: build-push deploy ## Build, push, and deploy everything

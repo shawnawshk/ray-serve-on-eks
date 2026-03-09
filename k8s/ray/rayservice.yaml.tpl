@@ -58,7 +58,7 @@ spec:
             kubernetes.io/arch: amd64
           containers:
           - name: ray-head
-            image: 985955614379.dkr.ecr.us-west-2.amazonaws.com/ray-serve-vllm:latest
+            image: ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${IMAGE_REPO}:${IMAGE_TAG}
             ports:
             - containerPort: 6379
               name: gcs
@@ -118,7 +118,7 @@ spec:
               mountPath: /cache
           containers:
           - name: ray-worker
-            image: 985955614379.dkr.ecr.us-west-2.amazonaws.com/ray-serve-vllm:latest
+            image: ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${IMAGE_REPO}:${IMAGE_TAG}
             resources:
               requests:
                 cpu: "4"
