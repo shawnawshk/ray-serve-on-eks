@@ -58,10 +58,8 @@ ray-serve-on-eks/
 │   │   └── operator-values.yaml        # KubeRay operator Helm values
 │   └── gpu-operator/
 │       └── values.yaml                 # NVIDIA GPU Operator Helm values
-├── load-test/
-│   └── locustfile.py                   # Locust load test
-└── docs/plans/
-    └── *.md                            # Design docs
+└── load-test/
+    └── locustfile.py                   # Locust load test
 ```
 
 `serve/vllm_serve.py` is the **single source of truth** for the serve application. At deploy time it is loaded into a ConfigMap and mounted into the Ray pods — no code is baked into the container image.
