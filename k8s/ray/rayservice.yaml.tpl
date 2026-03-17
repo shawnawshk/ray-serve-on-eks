@@ -27,11 +27,11 @@ spec:
             min_replicas: 1
             max_replicas: 4
             look_back_period_s: 2
-            downscale_delay_s: 600
+            downscale_delay_s: 120
             upscale_delay_s: 30
-            target_num_ongoing_requests_per_replica: 5
+            target_ongoing_requests: 5
           graceful_shutdown_timeout_s: 5
-          max_concurrent_queries: 100
+          max_ongoing_requests: 100
           ray_actor_options:
             num_cpus: 0
             num_gpus: 1

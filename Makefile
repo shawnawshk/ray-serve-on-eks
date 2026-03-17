@@ -3,7 +3,7 @@ export
 
 IMAGE_URI := $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(IMAGE_REPO)
 
-.PHONY: help build push login configmap render deploy teardown all
+.PHONY: help build push login configmap render deploy deploy-webui destroy load-test all
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
@@ -36,9 +36,17 @@ deploy: configmap render ## Deploy ConfigMap + RayService
 deploy-webui: ## Deploy Open WebUI
 	kubectl apply -f k8s/ray/open-webui.yaml
 
-teardown: ## Delete RayService + ConfigMap + Open WebUI
+destroy: ## Delete RayService + ConfigMap + Open WebUI
 	-kubectl delete rayservice vllm-serve -n default
 	-kubectl delete configmap vllm-serve-script -n default
 	-kubectl delete -f k8s/ray/open-webui.yaml
+
+load-test: ## Run Locust load test headless (HOST, USERS, SPAWN_RATE, RUN_TIME overrideable)
+	locust -f load-test/locustfile.py \
+		--host $${HOST:-http://localhost:8000} \
+		--headless \
+		-u $${USERS:-8} \
+		-r $${SPAWN_RATE:-2} \
+		--run-time $${RUN_TIME:-10m}
 
 all: build-push deploy ## Build, push, and deploy everything

@@ -15,7 +15,7 @@ PROMPTS = [
 
 
 class LLMUser(HttpUser):
-    wait_time = between(0.5, 1.5)
+    wait_time = between(0.2, 0.5)
 
     @task
     def chat(self):
@@ -23,14 +23,14 @@ class LLMUser(HttpUser):
             "messages": [
                 {"role": "user", "content": random.choice(PROMPTS)}
             ],
-            "max_tokens": 100,
+            "max_tokens": 300,
             "temperature": 0.7,
         }
         with self.client.post(
             "/v1/chat/completions",
             json=payload,
             catch_response=True,
-            timeout=60,
+            timeout=120,
         ) as response:
             if response.status_code == 200:
                 response.success()

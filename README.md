@@ -127,7 +127,8 @@ kubectl port-forward svc/open-webui 8080:80
 ### Teardown
 
 ```bash
-make teardown
+make destroy
+# Deletes RayService, ConfigMap, and Open WebUI
 ```
 
 ### All available targets
@@ -182,7 +183,8 @@ Each replica requires 1 GPU. When load exceeds the target, Ray Serve adds replic
 
 ```bash
 pip install locust
-locust -f load-test/locustfile.py --host http://localhost:8000
+make load-test
+# Override the target host: HOST=http://localhost:8000 make load-test
 ```
 
 Open the Ray Dashboard (`kubectl port-forward svc/vllm-serve-head-svc 8265:8265`) to watch replicas scale in real time.
