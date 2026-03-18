@@ -42,6 +42,10 @@ destroy: ## Delete RayService + ConfigMap + Open WebUI
 	-kubectl delete -f k8s/ray/open-webui.yaml
 
 load-test: ## Run Locust load test headless (HOST, USERS, SPAWN_RATE, RUN_TIME overrideable)
+	@kubectl port-forward svc/vllm-serve-serve-svc 8000:8000 & \
+	PF_PID=$$!; \
+	trap "kill $$PF_PID 2>/dev/null" EXIT INT TERM; \
+	sleep 2; \
 	locust -f load-test/locustfile.py \
 		--host $${HOST:-http://localhost:8000} \
 		--headless \
