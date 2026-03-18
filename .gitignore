@@ -1,3 +1,4 @@
 __pycache__/
 .env
 k8s/ray/rayservice.yaml
+CLAUDE.md

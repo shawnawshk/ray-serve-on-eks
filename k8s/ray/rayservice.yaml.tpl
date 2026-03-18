@@ -23,7 +23,6 @@ spec:
       deployments:
         - name: vllm-deployment
           autoscaling_config:
-            metrics_interval_s: 0.2
             min_replicas: 1
             max_replicas: 4
             look_back_period_s: 2
